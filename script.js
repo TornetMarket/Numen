@@ -1,361 +1,325 @@
-/* script.js — Numen Prop ATM Simulator
-   - Password: Venus (case-sensitive)
-   - Fake NFC particle effect when "Write NFC" is clicked
-   - Animated notifications, terminal logs, progress flows
+/* NUMEN — refined build
+   - Password: Venus
+   - No pre-login dots; tight spacing; better animations
+   - Polished NFC particles; camera overlay; aligned thumb-nav
 */
-
 (() => {
-  // DOM
-  const loginScreen = document.getElementById('login-screen');
-  const appScreen = document.getElementById('app-screen');
-  const enterBtn = document.getElementById('enter-btn');
-  const pwdInput = document.getElementById('pwd');
+  // ELs
+  const login = document.getElementById('login');
+  const main = document.getElementById('main');
+  const pwd = document.getElementById('pwd');
+  const enter = document.getElementById('enter');
   const notifications = document.getElementById('notifications');
-  const sessionIdEl = document.getElementById('session-id');
-  const navBtns = document.querySelectorAll('.nav-btn');
+
+  const sessionEl = document.getElementById('session-id');
+  const camBtn = document.getElementById('cam');
+  const cinema = document.getElementById('cinema');
+
+  const navBtns = document.querySelectorAll('.thumb-btn');
   const panels = document.querySelectorAll('.panel');
-  const cardActions = document.querySelectorAll('.card-action');
-  const applyBtn = document.getElementById('apply-btn');
-  const writeBtn = document.getElementById('write-btn');
-  const nfcStage = document.getElementById('nfc-stage');
-  const miniTerm = document.getElementById('mini-terminal');
-  const terminal = document.getElementById('terminal');
+
+  const applyBtn = document.getElementById('apply');
+  const writeBtn = document.getElementById('write');
+  const cardSelect = document.getElementById('card-select');
+  const miniLog = document.getElementById('mini-log');
+  const nfcCanvas = document.getElementById('nfc-canvas');
+
+  const nodeMap = document.getElementById('node-map');
+  const scanBtn = document.getElementById('scan');
+
+  const term = document.getElementById('term');
   const termIn = document.getElementById('term-in');
   const termSend = document.getElementById('term-send');
-  const nfcCanvas = document.getElementById('nfc-canvas');
-  const camToggle = document.getElementById('cam-toggle');
-  const cinema = document.getElementById('cinema');
-  const logoutBtn = document.getElementById('logout-btn');
 
-  // Config / fake data
+  const lockBtn = document.getElementById('lock');
+  const logoutBtn = document.getElementById('logout');
+
+  // Prefs
+  const pSound = document.getElementById('p-sound');
+  const pNotif = document.getElementById('p-notif');
+  const pCam = document.getElementById('p-cam');
+
+  // Data
   const PASSWORD = 'Venus';
-  const fakeCards = {
-    card1: {name:'VAULT-001', pan:'5454 3333 2222 1111'},
-    card2: {name:'GHOST-ACCT', pan:'4000 1234 5678 9010'},
-    card3: {name:'TAP-TEST', pan:'6011 0009 9013 9424'}
+  const CARDS = {
+    card1: { name:'VAULT-001', pan:'5454 3333 2222 1111' },
+    card2: { name:'GHOST-ACCT', pan:'4000 1234 5678 9010' },
+    card3: { name:'TAP-TEST',  pan:'6011 0009 9013 9424' }
   };
 
-  // Helpers
-  function uuid() {
-    return 'GHOST-' + Math.random().toString(36).slice(2,9).toUpperCase();
+  // Utils
+  const uid = () => 'S-' + Math.random().toString(36).slice(2,8).toUpperCase();
+  const now = () => new Date().toLocaleTimeString();
+
+  function toast(msg, small=false){
+    if (!pNotif.checked) return;
+    const t = document.createElement('div');
+    t.className = 'toast' + (small ? ' small':'');
+    t.textContent = msg;
+    notifications.appendChild(t);
+    // auto-remove
+    setTimeout(() => {
+      t.style.transition = 'opacity .4s, transform .4s';
+      t.style.opacity = '0';
+      t.style.transform = 'translateY(-8px)';
+      setTimeout(() => t.remove(), 420);
+    }, 2200);
+    if (pSound.checked) try{ new AudioContext().close(); }catch{}
   }
 
-  function notify(txt, small=false) {
-    // create animated notification
-    const n = document.createElement('div');
-    n.className = 'notify' + (small ? ' small' : '');
-    n.textContent = txt;
-    notifications.appendChild(n);
-    setTimeout(()=> n.style.opacity = '1', 10);
-    // auto remove
-    setTimeout(()=> {
-      n.style.transition = 'opacity .5s, transform .4s';
-      n.style.opacity = '0';
-      n.style.transform = 'translateY(-10px)';
-      setTimeout(()=> n.remove(), 600);
-    }, 2400);
+  function logMini(line){
+    const d = document.createElement('div');
+    d.textContent = `[${now()}] ${line}`;
+    miniLog.prepend(d);
   }
 
-  function appendMiniLog(txt) {
-    const line = document.createElement('div');
-    line.textContent = `[${(new Date()).toLocaleTimeString()}] ${txt}`;
-    miniTerm.prepend(line);
-  }
-
-  function appendTerminal(txt) {
-    const line = document.createElement('div');
-    line.textContent = `[${(new Date()).toLocaleTimeString()}] ${txt}`;
-    terminal.appendChild(line);
-    terminal.scrollTop = terminal.scrollHeight;
+  function log(line){
+    const d = document.createElement('div');
+    d.textContent = `[${now()}] ${line}`;
+    term.appendChild(d);
+    term.scrollTop = term.scrollHeight;
   }
 
   // LOGIN
-  function loginAttempt() {
-    const val = pwdInput.value.trim();
-    if (val === PASSWORD) {
-      // success
-      sessionIdEl.textContent = uuid();
-      notify('Access Granted — Session created', true);
-      loginScreen.classList.add('hidden');
-      appScreen.classList.remove('hidden');
-      appScreen.setAttribute('aria-hidden','false');
-      // small start logs
-      appendTerminal('>> Bootstrapping NUMEN UI...');
-      appendTerminal('>> Loading camera-ready shaders...');
-      appendTerminal('>> Session: ' + sessionIdEl.textContent);
-      setTimeout(()=> notify('NUMEN ready — camera mode looks clean'), 800);
+  function tryLogin(){
+    const v = (pwd.value || '').trim();
+    if (v === PASSWORD){
+      sessionEl.textContent = uid();
+      login.classList.add('hidden');
+      main.classList.remove('hidden');
+      main.setAttribute('aria-hidden','false');
+      toast('Access granted', true);
+      log('UI online');
+      log('Session ' + sessionEl.textContent);
+      // focus nav state
+      document.querySelector('.thumb-btn[data-panel="dash"]').click();
     } else {
-      notify('Invalid password', true);
-      pwdInput.value = '';
-      pwdInput.focus();
-      appendTerminal('>> Failed login attempt');
+      toast('Invalid password', true);
+      pwd.value = '';
+      pwd.focus();
+      log('Rejected credential');
     }
   }
-  enterBtn.addEventListener('click', loginAttempt);
-  pwdInput.addEventListener('keydown', e => { if (e.key === 'Enter') loginAttempt(); });
+  enter.addEventListener('click', tryLogin);
+  pwd.addEventListener('keydown', e => e.key === 'Enter' && tryLogin());
+  setTimeout(() => pwd.focus(), 400);
 
-  // Simple nav
-  navBtns.forEach(b => {
-    b.addEventListener('click', () => {
-      navBtns.forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      const panel = b.dataset.panel;
-      panels.forEach(p => {
-        if (p.id === panel) {
-          p.classList.add('active');
-          p.setAttribute('aria-hidden','false');
-        } else {
-          p.classList.remove('active');
-          p.setAttribute('aria-hidden','true');
-        }
-      });
-    });
-  });
-
-  // Quick card actions
-  cardActions.forEach(btn => {
+  // NAV
+  navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      const sim = btn.dataset.sim;
-      if (sim === 'atm' || sim === 'nfc') {
-        // switch to ATM panel
-        document.querySelector('.nav-btn[data-panel="atm"]').click();
-        notify('ATM panel opened', true);
-      } else if (sim === 'scan') {
-        document.querySelector('.nav-btn[data-panel="network"]').click();
-        notify('Node scan ready', true);
-      }
+      navBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const id = btn.dataset.panel;
+      panels.forEach(p => {
+        const active = p.id === id;
+        p.classList.toggle('active', active);
+        p.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      if (id === 'atm') initNFC(); // ensure canvas sized
     });
   });
 
-  // Apply (clone) => fake loading and terminal update
-  applyBtn.addEventListener('click', () => {
-    const sel = document.getElementById('card-select').value;
-    const data = fakeCards[sel];
-    if (!data) return;
-    appendMiniLog(`Applied pattern ${data.name} (${data.pan})`);
-    appendTerminal(`>> Applied stored track: ${data.name} (${data.pan})`);
-    notify('Clone applied to buffer', true);
-  });
-
-  // NFC canvas particle system
-  function makeCanvasFull(c) {
-    const rect = c.getBoundingClientRect();
-    c.width = rect.width * devicePixelRatio;
-    c.height = rect.height * devicePixelRatio;
-    c.style.width = rect.width + 'px';
-    c.style.height = rect.height + 'px';
-    const ctx = c.getContext('2d');
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    return ctx;
+  // NFC CANVAS
+  let ctx, cw, ch, particles = [], raf;
+  function sizeCanvas(){
+    const rect = nfcCanvas.getBoundingClientRect();
+    nfcCanvas.width = Math.max(1, rect.width * devicePixelRatio);
+    nfcCanvas.height = Math.max(1, rect.height * devicePixelRatio);
+    nfcCanvas.style.width = rect.width + 'px';
+    nfcCanvas.style.height = rect.height + 'px';
+    ctx = nfcCanvas.getContext('2d');
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    cw = rect.width; ch = rect.height;
   }
 
-  let particles = [];
-  function initCanvas() {
-    if (!nfcCanvas) return;
-    const ctx = makeCanvasFull(nfcCanvas);
-    const w = nfcCanvas.clientWidth;
-    const h = nfcCanvas.clientHeight;
+  function initNFC(){
+    sizeCanvas();
     particles = [];
-    for (let i=0;i<20;i++) {
+    const count = 22;
+    for (let i=0;i<count;i++){
       particles.push({
-        x: w/2 + (Math.random()-0.5)*80,
-        y: h/2 + (Math.random()-0.5)*40,
-        vx: (Math.random()-0.5)*0.6,
-        vy: (Math.random()-0.5)*0.8,
-        size: 2 + Math.random()*4,
-        life: 40 + Math.random()*60,
-        alpha: 0
+        x: cw/2 + (Math.random()-0.5)*90,
+        y: ch/2 + (Math.random()-0.5)*50,
+        vx: (Math.random()-0.5)*0.7,
+        vy: (Math.random()-0.5)*0.9,
+        r: 2 + Math.random()*3.5,
+        life: 60 + Math.random()*70
       });
     }
-    function frame(){
-      ctx.clearRect(0,0,w,h);
-      particles.forEach(p=>{
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        p.alpha = Math.min(1, (60 - p.life) / 60);
-        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size*4);
-        grd.addColorStop(0, `rgba(58,168,255,${0.9*p.alpha})`);
-        grd.addColorStop(0.6, `rgba(102,224,199,${0.5*p.alpha})`);
-        grd.addColorStop(1, `rgba(58,168,255,0)`);
-        ctx.fillStyle = grd;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size*1.8, 0, Math.PI*2);
-        ctx.fill();
-        // respawn
-        if (p.life <= 0) {
-          p.x = w/2 + (Math.random()-0.5)*80;
-          p.y = h/2 + (Math.random()-0.5)*40;
-          p.vx = (Math.random()-0.5)*0.8;
-          p.vy = (Math.random()-0.5)*0.9;
-          p.size = 2 + Math.random()*4;
-          p.life = 40 + Math.random()*60;
-        }
-      });
-      // ring
-      ctx.beginPath();
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = 'rgba(58,168,255,0.12)';
-      ctx.arc(w/2, h/2, 46, 0, Math.PI*2);
-      ctx.stroke();
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
+    cancelAnimationFrame(raf);
+    loop();
   }
 
-  // "Write NFC" simulation: show particles, progress, terminal logs
-  writeBtn.addEventListener('click', () => {
-    // show stage
-    nfcStage.setAttribute('aria-hidden','false');
-    nfcStage.style.opacity = '1';
-    initCanvas();
-    appendMiniLog('Starting NFC write sequence');
-    appendTerminal('>> Initiating NFC handshake...');
-    notify('Preparing NFC field', true);
+  function loop(){
+    ctx.clearRect(0,0,cw,ch);
 
-    // animated progress simulation
-    const progressSteps = [
-      {text:'Authenticating...', time:800},
-      {text:'Pushing emulation payload...', time:1200},
-      {text:'Negotiating field...', time:700},
-      {text:'Transmitting...', time:1400},
-      {text:'Finalizing...', time:900},
-    ];
+    // faint ring
+    ctx.beginPath();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(58,168,255,0.14)';
+    ctx.arc(cw/2, ch/2, 50, 0, Math.PI*2);
+    ctx.stroke();
 
-    let sum = 0;
-    progressSteps.reduce((p,step, idx) => {
-      return p.then(()=> new Promise(res=>{
-        appendTerminal(`>> ${step.text}`);
-        appendMiniLog(step.text);
-        // optional camera overlay toggle if set
-        setTimeout(()=> {
-          res();
-          if (idx === progressSteps.length -1) {
-            appendTerminal('>> NFC write complete — simulated success');
-            appendMiniLog('NFC: SUCCESS');
-            notify('Write complete', true);
-            // tiny flourish: particle flare
-            flashParticles();
-            // hide stage after short delay
-            setTimeout(()=> {
-              nfcStage.setAttribute('aria-hidden','true');
-              nfcStage.style.opacity = '0';
-            }, 900);
-          }
-        }, step.time);
-      }));
-    }, Promise.resolve());
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.life--;
+      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*5);
+      grd.addColorStop(0, 'rgba(58,168,255,0.85)');
+      grd.addColorStop(0.6, 'rgba(102,224,199,0.45)');
+      grd.addColorStop(1, 'rgba(58,168,255,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r*2, 0, Math.PI*2);
+      ctx.fill();
+      if (p.life <= 0){
+        p.x = cw/2 + (Math.random()-0.5)*90;
+        p.y = ch/2 + (Math.random()-0.5)*50;
+        p.vx = (Math.random()-0.5)*0.7;
+        p.vy = (Math.random()-0.5)*0.9;
+        p.r = 2 + Math.random()*3.5;
+        p.life = 60 + Math.random()*70;
+      }
+    });
+
+    raf = requestAnimationFrame(loop);
+  }
+  window.addEventListener('resize', () => {
+    if (!main.classList.contains('hidden')) initNFC();
   });
 
-  // small particle flare function to simulate final handshake
-  function flashParticles(){
-    if (!nfcCanvas) return;
-    const ctx = nfcCanvas.getContext('2d');
-    const w = nfcCanvas.width / devicePixelRatio;
-    const h = nfcCanvas.height / devicePixelRatio;
+  // APPLY / WRITE
+  applyBtn.addEventListener('click', () => {
+    const d = CARDS[cardSelect.value];
+    if (!d) return;
+    logMini(`Applied ${d.name} (${d.pan})`);
+    log(`Track loaded: ${d.name} (${d.pan})`);
+    toast('Clone ready', true);
+  });
+
+  writeBtn.addEventListener('click', () => {
+    initNFC();
+    toast('Preparing field', true);
+    log('NFC handshake start');
+
+    const steps = [
+      ['Authenticating…', 600],
+      ['Payload staging…', 900],
+      ['Field negotiation…', 650],
+      ['Transmitting…', 1100],
+      ['Finalizing…', 700]
+    ];
+    steps.reduce((p,[text,time],i,arr) => p.then(()=> new Promise(res=>{
+      log(text); logMini(text);
+      setTimeout(res, time);
+    })), Promise.resolve())
+    .then(()=> {
+      log('NFC write complete');
+      logMini('NFC: SUCCESS');
+      toast('Write complete', true);
+      if (pCam.checked) cinema.classList.remove('hidden');
+      flare();
+    });
+  });
+
+  function flare(){
+    // radial pulse
+    const steps = 14;
     let t = 0;
-    const raf = setInterval(()=>{
+    const id = setInterval(()=> {
       t++;
-      ctx.clearRect(0,0,w,h);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
       ctx.beginPath();
-      ctx.fillStyle = `rgba(58,168,255,${0.6 - t*0.02})`;
-      ctx.arc(w/2, h/2, 30 + t*6, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(58,168,255,${0.6 - t*0.04})`;
+      ctx.arc(cw/2, ch/2, 28 + t*6, 0, Math.PI*2);
       ctx.fill();
-      if (t>12) {
-        clearInterval(raf);
-        // restore initCanvas particles
-        initCanvas();
-      }
-    },40);
+      ctx.restore();
+      if (t >= steps){ clearInterval(id); }
+    }, 38);
   }
 
-  // Terminal panel send
+  // SCAN
+  function runScan(){
+    nodeMap.innerHTML = '';
+    log('Starting scan…');
+    const n = 9;
+    for (let i=0;i<n;i++){
+      const d = document.createElement('div');
+      d.style.width = d.style.height = (30 + Math.random()*26) + 'px';
+      d.style.borderRadius = '50%';
+      d.style.background = 'linear-gradient(180deg, rgba(58,168,255,0.18), rgba(255,255,255,0.03))';
+      d.style.boxShadow = '0 8px 28px rgba(58,168,255,0.12)';
+      d.style.opacity = '0.2';
+      d.style.transform = 'scale(0.9)';
+      d.style.transition = 'transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s';
+      nodeMap.appendChild(d);
+      setTimeout(()=> {
+        d.style.opacity = '1';
+        d.style.transform = 'scale(1.12)';
+        logMini(`Node ${i+1} online`);
+        log(`Node ${i+1} — ping ok`);
+        if (i === n-1) toast('Scan complete', true);
+      }, 240*i);
+    }
+  }
+  scanBtn.addEventListener('click', runScan);
+
+  // Terminal
   termSend.addEventListener('click', () => {
     const v = termIn.value.trim();
     if (!v) return;
-    appendTerminal('> ' + v);
-    // fake responses
-    if (/nfc/i.test(v)) {
-      appendTerminal('>> Simulating NFC write (type: quick)');
-      document.querySelector('.nav-btn[data-panel="atm"]').click();
+    log('> ' + v);
+    if (/nfc|write/i.test(v)){
+      document.querySelector('.thumb-btn[data-panel="atm"]').click();
       writeBtn.click();
-    } else if (/scan/i.test(v)) {
-      document.querySelector('.nav-btn[data-panel="network"]').click();
-      startScan();
+    } else if (/scan|net/i.test(v)){
+      document.querySelector('.thumb-btn[data-panel="net"]').click();
+      runScan();
+    } else if (/status/i.test(v)){
+      log('Status: UI stable, field ready, session ' + sessionEl.textContent);
     } else {
-      appendTerminal('>> Unknown command — simulated only.');
+      log('Unknown command');
     }
     termIn.value = '';
   });
-  termIn.addEventListener('keydown', e => { if (e.key === 'Enter') termSend.click(); });
+  termIn.addEventListener('keydown', e => e.key === 'Enter' && termSend.click());
 
-  // Node scan
-  function startScan(){
-    appendTerminal('>> Starting node scan...');
-    const nodeMap = document.getElementById('node-map');
-    nodeMap.innerHTML = '';
-    const nodes = 7;
-    for (let i=0;i<nodes;i++){
-      const n = document.createElement('div');
-      n.className = 'node';
-      n.style.width = (34 + Math.random()*20) + 'px';
-      n.style.height = n.style.width;
-      n.style.borderRadius = '50%';
-      n.style.background = 'linear-gradient(180deg, rgba(58,168,255,0.14), rgba(255,255,255,0.02))';
-      n.style.margin = '6px';
-      n.style.opacity = '0.15';
-      n.style.transition = 'transform .5s, opacity .6s, box-shadow .6s';
-      nodeMap.appendChild(n);
-    }
-    // animate nodes lighting up
-    const kids = Array.from(nodeMap.children);
-    kids.forEach((n, idx) => {
-      setTimeout(()=>{
-        n.style.transform = 'scale(1.12)';
-        n.style.opacity = '1';
-        n.style.boxShadow = '0 8px 30px rgba(58,168,255,0.12)';
-        appendTerminal(`>> Node ${idx+1} — ping ok`);
-        appendMiniLog(`Node ${idx+1} discovered`);
-        if (idx === kids.length -1) notify('Scan complete', true);
-      }, 280 * idx);
-    });
-  }
-  document.getElementById('scan-btn')?.addEventListener('click', startScan);
-
-  // camera overlay toggle
-  camToggle.addEventListener('click', () => {
+  // CAM overlay
+  camBtn.addEventListener('click', () => {
     cinema.classList.toggle('hidden');
-    if (!cinema.classList.contains('hidden')) {
-      notify('Camera overlay on', true);
-    } else {
-      notify('Camera overlay off', true);
-    }
+    toast(cinema.classList.contains('hidden') ? 'CAM off' : 'CAM on', true);
   });
 
-  // logout
+  // Lock / Logout
+  lockBtn.addEventListener('click', () => {
+    main.classList.add('hidden');
+    login.classList.remove('hidden');
+    toast('Locked', true);
+    pwd.value = '';
+    setTimeout(() => pwd.focus(), 250);
+  });
   logoutBtn.addEventListener('click', () => {
-    appScreen.classList.add('hidden');
-    loginScreen.classList.remove('hidden');
-    appScreen.setAttribute('aria-hidden','true');
-    pwdInput.value = '';
-    notify('Logged out', true);
-    appendTerminal('>> Session terminated');
+    main.classList.add('hidden');
+    login.classList.remove('hidden');
+    toast('Logged out', true);
+    pwd.value = '';
+    term.innerHTML = '';
+    miniLog.innerHTML = '';
+    sessionEl.textContent = '—';
+    setTimeout(() => pwd.focus(), 250);
   });
 
-  // small niceties
-  function initMini() {
-    // prefill mini terminal
-    appendMiniLog('NUMEN UI ready');
-    appendMiniLog('Tap Write NFC to run a demo');
-    // init canvas when ATM panel visible
-    setTimeout(()=> {
-      if (nfcCanvas) initCanvas();
-    }, 500);
-  }
-
-  initMini();
-
-  // accessibility: focus password on load
-  setTimeout(()=> pwdInput.focus(), 400);
+  // Quick actions on dashboard cards
+  document.querySelectorAll('.card-action').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sim = btn.dataset.sim;
+      if (sim === 'atm' || sim === 'nfc'){
+        document.querySelector('.thumb-btn[data-panel="atm"]').click();
+        if (sim === 'nfc') writeBtn.click();
+      } else if (sim === 'scan'){
+        document.querySelector('.thumb-btn[data-panel="net"]').click();
+        runScan();
+      }
+    });
+  });
 
 })();
