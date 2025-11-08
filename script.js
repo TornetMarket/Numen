@@ -1,7 +1,8 @@
-/* NUMEN — refined build
+/* NUMEN — v2 refinements
    - Password: Venus
-   - No pre-login dots; tight spacing; better animations
-   - Polished NFC particles; camera overlay; aligned thumb-nav
+   - ATM terminal enlarged
+   - NFC canvas: hundreds of particles with center gravity + damping
+   - Floating CAM button (bottom-right) for easy press
 */
 (() => {
   // ELs
@@ -12,8 +13,8 @@
   const notifications = document.getElementById('notifications');
 
   const sessionEl = document.getElementById('session-id');
-  const camBtn = document.getElementById('cam');
   const cinema = document.getElementById('cinema');
+  const camBtn = document.getElementById('cam');
 
   const navBtns = document.querySelectorAll('.thumb-btn');
   const panels = document.querySelectorAll('.panel');
@@ -52,19 +53,19 @@
   const now = () => new Date().toLocaleTimeString();
 
   function toast(msg, small=false){
-    if (!pNotif.checked) return;
-    const t = document.createElement('div');
-    t.className = 'toast' + (small ? ' small':'');
-    t.textContent = msg;
-    notifications.appendChild(t);
-    // auto-remove
-    setTimeout(() => {
-      t.style.transition = 'opacity .4s, transform .4s';
-      t.style.opacity = '0';
-      t.style.transform = 'translateY(-8px)';
-      setTimeout(() => t.remove(), 420);
-    }, 2200);
-    if (pSound.checked) try{ new AudioContext().close(); }catch{}
+    if (!pNotif || pNotif.checked) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (small ? ' small':'');
+      t.textContent = msg;
+      notifications.appendChild(t);
+      setTimeout(() => {
+        t.style.transition = 'opacity .4s, transform .4s';
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(-8px)';
+        setTimeout(() => t.remove(), 420);
+      }, 2200);
+    }
+    if (pSound && pSound.checked) { try{ new AudioContext().close(); }catch{} }
   }
 
   function logMini(line){
@@ -91,7 +92,6 @@
       toast('Access granted', true);
       log('UI online');
       log('Session ' + sessionEl.textContent);
-      // focus nav state
       document.querySelector('.thumb-btn[data-panel="dash"]').click();
     } else {
       toast('Invalid password', true);
@@ -119,7 +119,7 @@
     });
   });
 
-  // NFC CANVAS
+  // NFC CANVAS — Square-like: many particles + gentle gravity + damping
   let ctx, cw, ch, particles = [], raf;
   function sizeCanvas(){
     const rect = nfcCanvas.getBoundingClientRect();
@@ -127,7 +127,7 @@
     nfcCanvas.height = Math.max(1, rect.height * devicePixelRatio);
     nfcCanvas.style.width = rect.width + 'px';
     nfcCanvas.style.height = rect.height + 'px';
-    ctx = nfcCanvas.getContext('2d');
+    ctx = nfcCanvas.getContext('2d', { alpha:true });
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     cw = rect.width; ch = rect.height;
   }
@@ -135,15 +135,18 @@
   function initNFC(){
     sizeCanvas();
     particles = [];
-    const count = 22;
-    for (let i=0;i<count;i++){
+    const COUNT = Math.min(220, Math.floor((cw*ch)/3000)); // scale with area, cap for perf
+    for (let i=0;i<COUNT;i++){
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 20 + Math.random()*60;
       particles.push({
-        x: cw/2 + (Math.random()-0.5)*90,
-        y: ch/2 + (Math.random()-0.5)*50,
-        vx: (Math.random()-0.5)*0.7,
-        vy: (Math.random()-0.5)*0.9,
-        r: 2 + Math.random()*3.5,
-        life: 60 + Math.random()*70
+        x: cw/2 + Math.cos(angle)*radius,
+        y: ch/2 + Math.sin(angle)*radius,
+        vx: (Math.random()-0.5)*0.9,
+        vy: (Math.random()-0.5)*1.0,
+        r: 1.6 + Math.random()*2.6,
+        life: 120 + Math.random()*140,
+        alpha: 0.5 + Math.random()*0.5
       });
     }
     cancelAnimationFrame(raf);
@@ -151,37 +154,65 @@
   }
 
   function loop(){
-    ctx.clearRect(0,0,cw,ch);
+    // fade trail
+    ctx.fillStyle = 'rgba(3,16,24,0.18)';
+    ctx.fillRect(0,0,cw,ch);
 
-    // faint ring
+    // faint rings
     ctx.beginPath();
     ctx.lineWidth = 1.2;
     ctx.strokeStyle = 'rgba(58,168,255,0.14)';
-    ctx.arc(cw/2, ch/2, 50, 0, Math.PI*2);
+    ctx.arc(cw/2, ch/2, 52, 0, Math.PI*2);
     ctx.stroke();
 
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.life--;
-      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*5);
-      grd.addColorStop(0, 'rgba(58,168,255,0.85)');
-      grd.addColorStop(0.6, 'rgba(102,224,199,0.45)');
-      grd.addColorStop(1, 'rgba(58,168,255,0)');
+    // center gravity settings
+    const G = 0.015;   // gravity strength
+    const D = 0.985;   // damping
+    const CX = cw/2, CY = ch/2;
+
+    for (let i=0;i<particles.length;i++){
+      const p = particles[i];
+
+      // gravitational acceleration toward center
+      const dx = CX - p.x;
+      const dy = CY - p.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const ax = (dx / dist) * G;
+      const ay = (dy / dist) * G;
+
+      // update velocity with slight turbulence
+      p.vx = (p.vx + ax + (Math.random()-0.5)*0.02) * D;
+      p.vy = (p.vy + ay + (Math.random()-0.5)*0.02) * D;
+
+      // update position
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // life & respawn
+      if (--p.life <= 0){
+        p.x = CX + (Math.random()-0.5)*20;
+        p.y = CY + (Math.random()-0.5)*20;
+        p.vx = (Math.random()-0.5)*1.1;
+        p.vy = (Math.random()-0.5)*1.1;
+        p.r = 1.6 + Math.random()*2.6;
+        p.life = 120 + Math.random()*140;
+        p.alpha = 0.5 + Math.random()*0.5;
+      }
+
+      // draw glow
+      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*6);
+      grd.addColorStop(0, `rgba(58,168,255,${0.85*p.alpha})`);
+      grd.addColorStop(0.6, `rgba(102,224,199,${0.45*p.alpha})`);
+      grd.addColorStop(1, `rgba(58,168,255,0)`);
       ctx.fillStyle = grd;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r*2, 0, Math.PI*2);
+      ctx.arc(p.x, p.y, p.r*2.3, 0, Math.PI*2);
       ctx.fill();
-      if (p.life <= 0){
-        p.x = cw/2 + (Math.random()-0.5)*90;
-        p.y = ch/2 + (Math.random()-0.5)*50;
-        p.vx = (Math.random()-0.5)*0.7;
-        p.vy = (Math.random()-0.5)*0.9;
-        p.r = 2 + Math.random()*3.5;
-        p.life = 60 + Math.random()*70;
-      }
-    });
+    }
 
     raf = requestAnimationFrame(loop);
   }
+
   window.addEventListener('resize', () => {
     if (!main.classList.contains('hidden')) initNFC();
   });
@@ -201,13 +232,13 @@
     log('NFC handshake start');
 
     const steps = [
-      ['Authenticating…', 600],
-      ['Payload staging…', 900],
-      ['Field negotiation…', 650],
-      ['Transmitting…', 1100],
+      ['Authenticating…', 550],
+      ['Payload staging…', 880],
+      ['Field negotiation…', 640],
+      ['Transmitting…', 1080],
       ['Finalizing…', 700]
     ];
-    steps.reduce((p,[text,time],i,arr) => p.then(()=> new Promise(res=>{
+    steps.reduce((p,[text,time]) => p.then(()=> new Promise(res=>{
       log(text); logMini(text);
       setTimeout(res, time);
     })), Promise.resolve())
@@ -215,36 +246,38 @@
       log('NFC write complete');
       logMini('NFC: SUCCESS');
       toast('Write complete', true);
-      if (pCam.checked) cinema.classList.remove('hidden');
+      if (pCam && pCam.checked) cinema.classList.remove('hidden');
       flare();
     });
   });
 
+  // pulse ring at the end of write
   function flare(){
-    // radial pulse
-    const steps = 14;
+    const steps = 16;
     let t = 0;
+    const CX = cw/2, CY = ch/2;
     const id = setInterval(()=> {
       t++;
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.beginPath();
-      ctx.fillStyle = `rgba(58,168,255,${0.6 - t*0.04})`;
-      ctx.arc(cw/2, ch/2, 28 + t*6, 0, Math.PI*2);
-      ctx.fill();
+      ctx.strokeStyle = `rgba(58,168,255,${0.6 - t*0.035})`;
+      ctx.lineWidth = 2;
+      ctx.arc(CX, CY, 28 + t*7, 0, Math.PI*2);
+      ctx.stroke();
       ctx.restore();
       if (t >= steps){ clearInterval(id); }
-    }, 38);
+    }, 34);
   }
 
   // SCAN
   function runScan(){
     nodeMap.innerHTML = '';
     log('Starting scan…');
-    const n = 9;
+    const n = 10;
     for (let i=0;i<n;i++){
       const d = document.createElement('div');
-      d.style.width = d.style.height = (30 + Math.random()*26) + 'px';
+      d.style.width = d.style.height = (28 + Math.random()*28) + 'px';
       d.style.borderRadius = '50%';
       d.style.background = 'linear-gradient(180deg, rgba(58,168,255,0.18), rgba(255,255,255,0.03))';
       d.style.boxShadow = '0 8px 28px rgba(58,168,255,0.12)';
@@ -283,7 +316,7 @@
   });
   termIn.addEventListener('keydown', e => e.key === 'Enter' && termSend.click());
 
-  // CAM overlay
+  // CAM overlay — floating FAB
   camBtn.addEventListener('click', () => {
     cinema.classList.toggle('hidden');
     toast(cinema.classList.contains('hidden') ? 'CAM off' : 'CAM on', true);
