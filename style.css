@@ -1,0 +1,134 @@
+/* style.css — Numen Prop ATM Simulator
+   Mobile-first, optimized for iPhone 14 Pro Max safe area
+   Dark hacker palette (mono + blue accent), camera friendly
+*/
+
+:root{
+  --bg:#030305;
+  --panel:#0c0f14;
+  --muted:#9aa6b2;
+  --accent:#3aa8ff; /* blue accent */
+  --accent-2:#66e0c7;
+  --glass: rgba(255,255,255,0.02);
+  --card:#0b0e12;
+  --radius:14px;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --max-width:430px; /* phone-like */
+  --font: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Reset */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--font);
+  background:
+    radial-gradient(800px 300px at 10% 10%, rgba(58,168,255,0.03), transparent 10%),
+    linear-gradient(180deg,#000408 0%, var(--bg) 100%);
+  color:var(--muted);
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;padding-top:calc(var(--safe-top) + 10px);padding-bottom:calc(var(--safe-bottom) + 10px);
+}
+
+/* App shell */
+#shell{width:100%;max-width:var(--max-width);height:94vh;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 40px rgba(0,0,0,0.7);position:relative}
+
+/* Notifications */
+#notifications{position:absolute;top:12px;left:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:none;z-index:60}
+.notify{
+  pointer-events:auto;
+  align-self:flex-start;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:10px;color:var(--muted);font-weight:700;backdrop-filter:blur(4px);transform:translateY(-8px);opacity:0;
+  animation:notify-in .45s forwards;
+}
+.notify.small{font-size:12px}
+@keyframes notify-in{to{transform:none;opacity:1}}
+
+/* Screens */
+.screen{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:transparent}
+.hidden{display:none}
+
+/* Login card */
+.login-card{width:88%;max-width:360px;padding:20px;border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.03);box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+.brand{font-weight:900;color:var(--accent);font-size:34px;margin:0;text-align:center;letter-spacing:4px}
+.subtitle{margin:8px 0 18px;text-align:center;color:var(--muted);font-size:12px}
+.input-row{display:flex;gap:8px;align-items:center;justify-content:center}
+.input-row input{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);font-size:16px}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px 14px;border-radius:12px;color:var(--muted);font-weight:700}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#2fa0ff);border:none;color:#041226}
+.btn.ghost{opacity:0.9;border:1px dashed rgba(255,255,255,0.03)}
+.login-anim{display:flex;gap:6px;justify-content:center;margin-top:14px;opacity:0.85}
+.login-anim .dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(180deg,var(--accent-2),var(--accent));animation:dot 1s infinite;}
+.login-anim .dot:nth-child(2){animation-delay:.12s}
+.login-anim .dot:nth-child(3){animation-delay:.24s}
+@keyframes dot{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+
+/* Main layout */
+.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg, transparent, rgba(255,255,255,0.01))}
+.topbar .left{display:flex;flex-direction:column}
+.brand.small{font-weight:800;color:var(--accent);font-size:14px}
+.session{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px}
+.icon{background:transparent;border:none;padding:6px;border-radius:10px}
+
+/* Main content */
+.main{display:flex;flex:1;min-height:calc(100% - 56px - 56px)}
+.thumb-nav{width:78px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);display:flex;flex-direction:column;gap:8px;padding:10px;border-right:1px solid rgba(255,255,255,0.02)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:12px;border:none;background:transparent;color:var(--muted);font-weight:800;font-size:12px}
+.nav-btn span{font-size:11px}
+.nav-btn.active{background:linear-gradient(180deg, rgba(58,168,255,0.06), rgba(255,255,255,0.012));border:1px solid rgba(58,168,255,0.07);color:var(--accent);box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+.panel-wrap{flex:1;padding:12px;overflow:auto}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border-radius:12px;padding:12px;min-height:160px;display:none}
+.panel.active{display:block}
+h2{margin:0;color:#dff6ff}
+.muted{color:rgba(255,255,255,0.45);margin-top:6px}
+
+/* Quick grid */
+.quick-grid{display:flex;gap:10px;margin-top:12px}
+.card-action{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);font-weight:800}
+
+/* ATM layout */
+.atm-grid{display:flex;gap:12px;margin-top:12px}
+.atm-left{flex:1;display:flex;flex-direction:column;gap:8px}
+.atm-right{width:190px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center}
+.label{font-size:12px;color:var(--muted)}
+select{padding:12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.hint{font-size:12px;color:rgba(255,255,255,0.45);margin-top:8px}
+
+/* NFC stage */
+.nfc-stage{width:100%;height:140px;border-radius:10px;background:linear-gradient(180deg,#021b2a 0%, #00121a 100%);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+.nfc-stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.nfc-label{position:absolute;left:12px;bottom:10px;font-size:12px;color:rgba(255,255,255,0.8);font-weight:800}
+
+/* terminal-mini */
+.terminal-mini{width:100%;height:78px;background:linear-gradient(180deg,#001217,#00121a);border-radius:8px;padding:8px;font-family:ui-monospace,monospace;font-size:12px;color:#c8fff5;overflow:auto}
+
+/* Node map */
+.node-map{height:220px;border-radius:10px;background:linear-gradient(180deg,#071424,#031019);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.06);font-weight:900}
+
+/* Terminal panel */
+.terminal{height:220px;background:linear-gradient(180deg,#001217,#00121a);border-radius:10px;padding:10px;color:#bfffea;font-family:ui-monospace,monospace;font-size:12px;overflow:auto}
+.term-input{display:flex;gap:8px;margin-top:8px}
+.term-input input{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted)}
+
+/* Footer */
+.footer{height:56px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg,transparent, rgba(255,255,255,0.01))}
+.small{font-size:12px;color:rgba(255,255,255,0.5)}
+
+/* Cinema overlay */
+.cinema{position:absolute;inset:0;pointer-events:none;z-index:40}
+.cinema .glare{position:absolute;left:-20%;top:-30%;width:140%;height:60%;transform:rotate(-12deg);background:linear-gradient(90deg, rgba(255,255,255,0.04), rgba(58,168,255,0.03), transparent);mix-blend-mode:overlay}
+.cinema .vignette{position:absolute;inset:0;box-shadow:inset 0 200px 200px rgba(0,0,0,0.6);border-radius:22px}
+
+/* Visually hidden */
+.visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+
+/* Responsive tweak */
+@media (max-width:420px){
+  .atm-grid{flex-direction:column}
+  .atm-right{width:100%}
+  .thumb-nav{width:62px}
+  .panel-wrap{padding:8px}
+}
