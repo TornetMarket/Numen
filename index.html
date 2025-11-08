@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Numen — Prop ATM Simulator</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="shell">
+    <!-- Notification area -->
+    <div id="notifications" aria-live="polite"></div>
+
+    <!-- Splash / Login -->
+    <div id="login-screen" class="screen">
+      <div class="card login-card" role="dialog" aria-labelledby="login-title">
+        <h1 id="login-title" class="brand">NUMEN</h1>
+        <p class="subtitle">Stage-prop Hacking Simulator</p>
+
+        <label for="pwd" class="visually-hidden">Password</label>
+        <div class="input-row">
+          <input id="pwd" type="password" placeholder="Enter password" aria-label="Password" autocomplete="off" />
+          <button id="enter-btn" class="btn primary" aria-label="Enter">Enter</button>
+        </div>
+
+        <div id="login-anim" class="login-anim">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+
+        <div class="login-note">Camera-ready. Use for filming only — purely simulated.</div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-screen" class="screen hidden" aria-hidden="true">
+      <header class="topbar">
+        <div class="left">
+          <div class="brand small">NUMEN</div>
+          <div class="session" id="session">Session — <span id="session-id">—</span></div>
+        </div>
+        <div class="right">
+          <button id="cam-toggle" class="icon" title="Toggle Camera Overlay">🎥</button>
+        </div>
+      </header>
+
+      <main class="main">
+        <!-- Left thumb nav -->
+        <nav class="thumb-nav" role="navigation" aria-label="Main actions">
+          <button class="nav-btn active" data-panel="dashboard">🏠<span>Home</span></button>
+          <button class="nav-btn" data-panel="atm">🏧<span>ATM</span></button>
+          <button class="nav-btn" data-panel="network">🌐<span>Network</span></button>
+          <button class="nav-btn" data-panel="logs">📜<span>Logs</span></button>
+          <button class="nav-btn" data-panel="settings">⚙️<span>Settings</span></button>
+        </nav>
+
+        <!-- Panels -->
+        <section class="panel-wrap">
+          <!-- Dashboard -->
+          <section id="dashboard" class="panel active" aria-hidden="false">
+            <h2>Ready</h2>
+            <p class="lead">Select an operation from the left. Camera mode gives extra cinematic glare.</p>
+
+            <div class="quick-grid">
+              <button class="card-action" data-sim="atm">Simulate ATM</button>
+              <button class="card-action" data-sim="nfc">Simulate NFC</button>
+              <button class="card-action" data-sim="scan">Run Network Scan</button>
+            </div>
+          </section>
+
+          <!-- ATM / NFC -->
+          <section id="atm" class="panel" aria-hidden="true">
+            <h2>ATM — NFC Emulation</h2>
+            <p class="muted">Camera prop: simulated NFC particles & terminal trace.</p>
+
+            <div class="atm-grid">
+              <div class="atm-left">
+                <label for="card-select" class="label">Stored EMV / Magstripe Data</label>
+                <select id="card-select" aria-label="Choose magstripe">
+                  <option value="card1">VAULT-001 • 5454 3333 2222 1111</option>
+                  <option value="card2">GHOST-ACCT • 4000 1234 5678 9010</option>
+                  <option value="card3">TAP-TEST • 6011 0009 9013 9424</option>
+                </select>
+
+                <div class="btn-row">
+                  <button id="apply-btn" class="btn">Apply / Clone</button>
+                  <button id="write-btn" class="btn primary">Write NFC</button>
+                </div>
+
+                <div class="hint">Hold phone near the machine — visual particles will appear.</div>
+              </div>
+
+              <div class="atm-right">
+                <div class="nfc-stage" id="nfc-stage" aria-hidden="true">
+                  <canvas id="nfc-canvas"></canvas>
+                  <div class="nfc-label">Simulating NFC field</div>
+                </div>
+
+                <div class="terminal-mini" id="mini-terminal" aria-live="polite"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Network -->
+          <section id="network" class="panel" aria-hidden="true">
+            <h2>Network Scanner</h2>
+            <p class="muted">Pretend nodes light up in a realistic sequence.</p>
+
+            <div id="node-map" class="node-map" role="img" aria-label="Fake node map"></div>
+            <div class="btn-row" style="margin-top:12px;">
+              <button id="scan-btn" class="btn primary">Run Scan</button>
+            </div>
+          </section>
+
+          <!-- Logs -->
+          <section id="logs" class="panel" aria-hidden="true">
+            <h2>Terminal</h2>
+            <div id="terminal" class="terminal" role="log" aria-live="polite"></div>
+            <div class="term-input">
+              <input id="term-in" placeholder="type pseudo-command (try: run nfc, scan)" />
+              <button id="term-send" class="btn">Send</button>
+            </div>
+          </section>
+
+          <!-- Settings -->
+          <section id="settings" class="panel" aria-hidden="true">
+            <h2>Settings</h2>
+            <div class="setting-row">
+              <label><input type="checkbox" id="pref-sounds" checked /> Sound effects</label>
+            </div>
+            <div class="setting-row">
+              <label><input type="checkbox" id="pref-notifs" checked /> Animated notifications</label>
+            </div>
+            <div class="setting-row">
+              <label><input type="checkbox" id="pref-cam" /> Auto camera overlay on run</label>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="left small">Fake ops — for filming only</div>
+        <div class="right">
+          <button id="lock-btn" class="btn ghost small">Lock</button>
+          <button id="logout-btn" class="btn small">Logout</button>
+        </div>
+      </footer>
+
+      <!-- Cinematic overlay -->
+      <div id="cinema" class="cinema hidden" aria-hidden="true">
+        <div class="glare"></div>
+        <div class="vignette"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
